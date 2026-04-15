@@ -15,6 +15,8 @@ let invulnerableTimer = 0;
 let invulnerableDuration = 3; // Sekunden
 let lastTimestamp = 0;
 let animationId = null;
+let lasers = []; // Aktive Laserstrahlen
+
 
 // ============ RESPONSIVE DIMENSIONEN ============
 function getJoystickDimensions() {
@@ -76,6 +78,8 @@ function handleTouchStart(e) {
     if (joystick.setInitialTouch(x, y)) {
         if (gameOver) resetGame();
         updateStatus('Aktiv');
+    } else if (!gameOver) {
+        shootLaser();
     }
 }
 
@@ -111,6 +115,8 @@ function handleMouseDown(e) {
         mouseDown = true;
         if (gameOver) resetGame();
         updateStatus('Aktiv (Maus)');
+    } else if (!gameOver) {
+        shootLaser();
     }
 }
 
@@ -153,6 +159,56 @@ function updateHearts() {
             heart.classList.add('heart-lost');
         }
     }
+}
+
+function shootLaser() {
+    const rad = arrow.angle * Math.PI / 180;
+    const speed = Math.min(window.innerWidth, window.innerHeight) * 0.9; // pixels per second
+
+    lasers.push({
+        x: arrow.x,
+        y: arrow.y,
+        dx: Math.cos(rad),
+        dy: Math.sin(rad),
+        speed,
+        radius: 4
+    });
+}
+
+function updateLasers(delta) {
+    for (let i = lasers.length - 1; i >= 0; i--) {
+        const laser = lasers[i];
+        laser.x += laser.dx * laser.speed * delta;
+        laser.y += laser.dy * laser.speed * delta;
+
+        // Laser außerhalb des Bildschirms entfernen
+        if (laser.x < -20 || laser.x > canvas.width + 20 || laser.y < -20 || laser.y > canvas.height + 20) {
+            lasers.splice(i, 1);
+            continue;
+        }
+
+        if (asteroidManager.hitLaser(laser.x, laser.y, laser.radius)) {
+            lasers.splice(i, 1);
+            score += 20;
+        }
+    }
+}
+
+function drawLasers(ctx) {
+    ctx.save();
+    ctx.strokeStyle = 'rgba(0, 255, 255, 0.9)';
+    ctx.lineWidth = 3;
+    ctx.shadowColor = 'rgba(0, 255, 255, 0.8)';
+    ctx.shadowBlur = 12;
+
+    for (const laser of lasers) {
+        ctx.beginPath();
+        ctx.moveTo(laser.x - laser.dx * 8, laser.y - laser.dy * 8);
+        ctx.lineTo(laser.x + laser.dx * 8, laser.y + laser.dy * 8);
+        ctx.stroke();
+    }
+
+    ctx.restore();
 }
 
 function loseLife() {
@@ -238,6 +294,10 @@ function animate(timestamp = 0) {
 
     asteroidManager.update(joystick.angle, joystick.distance, joystick.radius, delta);
     asteroidManager.draw(ctx);
+
+    // Laser aktualisieren und zeichnen
+    updateLasers(delta);
+    drawLasers(ctx);
 
     // Kollisionsprüfung
     if (checkCollisions()) return;

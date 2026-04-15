@@ -141,6 +141,28 @@ class AsteroidManager {
         return false;
     }
 
+    hitLaser(laserX, laserY, laserRadius) {
+        for (let i = this.asteroids.length - 1; i >= 0; i--) {
+            const asteroid = this.asteroids[i];
+            let x = asteroid.x + this.offsetX;
+            let y = asteroid.y + this.offsetY;
+
+            if (x < 0) x += this.width;
+            if (x > this.width) x -= this.width;
+            if (y < 0) y += this.height;
+            if (y > this.height) y -= this.height;
+
+            const dx = x - laserX;
+            const dy = y - laserY;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            if (distance < asteroid.size + laserRadius) {
+                this.asteroids.splice(i, 1);
+                return true;
+            }
+        }
+        return false;
+    }
+
     draw(ctx) {
         ctx.save();
 
