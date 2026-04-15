@@ -108,7 +108,7 @@ function handleTouchEnd(e) {
     if (endedJoystickTouch) {
         joystick.endTouch();
         joystickTouchId = null;
-        arrow.setAngle(0);
+        // arrow.setAngle(0); // Removed: arrow should stay in last direction
         if (!gameOver) updateStatus('Bereit');
     }
 }
@@ -145,7 +145,7 @@ function handleMouseUp() {
     mouseDown = false;
     if (joystick.isActive) {
         joystick.endTouch();
-        arrow.setAngle(0);
+        // arrow.setAngle(0); // Removed: arrow should stay in last direction
         if (!gameOver) updateStatus('Bereit');
     }
 }
