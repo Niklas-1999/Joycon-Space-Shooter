@@ -150,6 +150,16 @@ function handleMouseUp() {
     }
 }
 
+// ============ TASTATUR HANDLER ============
+function handleKeyDown(e) {
+    if (e.code === 'Space') {
+        e.preventDefault();
+        if (!gameOver) {
+            shootLaser();
+        }
+    }
+}
+
 // ============ EVENT LISTENER REGISTRIEREN ============
 canvas.addEventListener('touchstart', handleTouchStart);
 canvas.addEventListener('touchmove', handleTouchMove);
@@ -157,6 +167,7 @@ canvas.addEventListener('touchend', handleTouchEnd);
 canvas.addEventListener('mousedown', handleMouseDown);
 canvas.addEventListener('mousemove', handleMouseMove);
 canvas.addEventListener('mouseup', handleMouseUp);
+document.addEventListener('keydown', handleKeyDown);
 
 // Restart Button Event Listener
 document.getElementById('restartButton').addEventListener('click', resetGame);
