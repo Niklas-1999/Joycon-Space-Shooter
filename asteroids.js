@@ -5,7 +5,7 @@ class AsteroidManager {
         this.height = height;
         this.asteroids = [];
         this.spawnTimer = 0;
-        this.spawnInterval = 60; // Alle 60 Frames (ca. 1 Sekunde bei 60 FPS)
+        this.spawnInterval = 1.0; // Sekunden zwischen Spawns
         this.maxAsteroids = 8;
         this.score = 0;
         this.offsetX = 0;
@@ -26,8 +26,9 @@ class AsteroidManager {
         // Zufällige Größe (10-30 Pixel)
         const size = Math.random() * 20 + 10;
 
-        // Zufällige Geschwindigkeit (1-4 Pixel pro Frame)
-        const speed = Math.random() * 3 + 1;
+        // Zufällige Geschwindigkeit (screen-relative, pro Sekunde)
+        const minDimension = Math.min(this.width, this.height);
+        const speed = (Math.random() * 0.025 + 0.015) * minDimension; // 1.5-4.0 % der kleineren Dimension pro Sekunde
 
         // Spawn-Position: AUßERHALB des sichtbaren Bereichs (mit extra Margin)
         const margin = 50; // Extra Abstand außerhalb des Bildschirms
@@ -68,15 +69,15 @@ class AsteroidManager {
         });
     }
 
-    update(joystickAngle, joystickDistance, maxDistance) {
+    update(joystickAngle, joystickDistance, maxDistance, delta) {
         // Bewegung relativ zum Joystick (wie Sterne)
-        if (joystickDistance > 0) {
+        if (joystickDistance > 0 && delta > 0) {
             const ratio = joystickDistance / maxDistance;
-            const speed = ratio * ratio * 12; // Gleiche Geschwindigkeit wie Sterne
+            const speed = ratio * ratio * 0.3 * Math.min(this.width, this.height); // relative Geschwindigkeit pro Sekunde
             const rad = joystickAngle * Math.PI / 180;
 
-            this.offsetX -= Math.cos(rad) * speed;
-            this.offsetY -= Math.sin(rad) * speed;
+            this.offsetX -= Math.cos(rad) * speed * delta;
+            this.offsetY -= Math.sin(rad) * speed * delta;
         }
 
         // Wrap around für unendliche Bewegung
@@ -88,7 +89,7 @@ class AsteroidManager {
         }
 
         // Spawn neue Asteroiden
-        this.spawnTimer++;
+        this.spawnTimer += delta;
         if (this.spawnTimer >= this.spawnInterval) {
             this.spawnAsteroid();
             this.spawnTimer = 0;
@@ -99,11 +100,11 @@ class AsteroidManager {
             const asteroid = this.asteroids[i];
 
             // Bewegung
-            asteroid.x += Math.cos(asteroid.direction) * asteroid.speed;
-            asteroid.y += Math.sin(asteroid.direction) * asteroid.speed;
+            asteroid.x += Math.cos(asteroid.direction) * asteroid.speed * delta;
+            asteroid.y += Math.sin(asteroid.direction) * asteroid.speed * delta;
 
             // Sehr langsame Rotation (1% der ursprünglichen Geschwindigkeit)
-            asteroid.rotation += asteroid.rotationSpeed * 0.01;
+            asteroid.rotation += asteroid.rotationSpeed * delta;
 
             // Entferne Asteroiden weit außerhalb des sichtbaren Bereichs
             const margin = 100; // Großer Margin für Despawning

@@ -23,19 +23,18 @@ class StarField {
         }
     }
 
-    update(angle, distance, maxDistance) {
+    update(angle, distance, maxDistance, delta) {
         // Berechne die Bewegung basierend auf Winkel und Entfernung
-        if (distance > 0) {
-            // Quadratische Kurve für dynamischere Beschleunigung
+        if (distance > 0 && delta > 0) {
             const ratio = distance / maxDistance;
-            const speed = ratio * ratio * 12; // 0-12 Pixel pro Frame (schneller und dynamischer)
+            const speed = ratio * ratio * 0.35 * Math.min(this.width, this.height); // relative Geschwindigkeit pro Sekunde
             const rad = angle * Math.PI / 180;
-            
-            // Bewegung in die entgegensetzte Richtung (parallax-effekt)
-            this.offsetX -= Math.cos(rad) * speed;
-            this.offsetY -= Math.sin(rad) * speed;
+
+            // Bewegung in die entgegengesetzte Richtung (parallax-effekt)
+            this.offsetX -= Math.cos(rad) * speed * delta;
+            this.offsetY -= Math.sin(rad) * speed * delta;
         }
-        
+
         // Wrap around für unendliche Bewegung
         if (Math.abs(this.offsetX) > this.width) {
             this.offsetX = this.offsetX % this.width;

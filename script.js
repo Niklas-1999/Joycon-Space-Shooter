@@ -12,7 +12,9 @@ let score = 0;
 let lives = 3;
 let invulnerable = false;
 let invulnerableTimer = 0;
-let invulnerableDuration = 180; // 3 Sekunden bei 60 FPS
+let invulnerableDuration = 3; // Sekunden
+let lastTimestamp = 0;
+let animationId = null;
 
 // ============ RESPONSIVE DIMENSIONEN ============
 function getJoystickDimensions() {
@@ -174,9 +176,9 @@ function loseLife() {
     }
 }
 
-function updateInvulnerability() {
+function updateInvulnerability(delta) {
     if (invulnerable) {
-        invulnerableTimer--;
+        invulnerableTimer -= delta;
         if (invulnerableTimer <= 0) {
             invulnerable = false;
             document.getElementById('canvas').classList.remove('arrow-invulnerable');
@@ -197,7 +199,7 @@ function resetGame() {
     document.getElementById('gameOverScreen').style.display = 'none';
     updateStatus('Neustart!');
     
-    // Animation wieder starten
+    lastTimestamp = 0;
     animate();
 }
 
@@ -216,7 +218,10 @@ function checkCollisions() {
 }
 
 // ============ ANIMATION LOOP ============
-function animate() {
+function animate(timestamp = 0) {
+    const delta = lastTimestamp ? Math.min((timestamp - lastTimestamp) / 1000, 0.05) : 0;
+    lastTimestamp = timestamp;
+
     // Canvas löschen
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -225,13 +230,13 @@ function animate() {
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     // Unverwundbarkeit aktualisieren
-    updateInvulnerability();
+    updateInvulnerability(delta);
 
     // Game-Objekte aktualisieren und zeichnen
-    starField.update(joystick.angle, joystick.distance, joystick.radius);
+    starField.update(joystick.angle, joystick.distance, joystick.radius, delta);
     starField.draw(ctx);
 
-    asteroidManager.update(joystick.angle, joystick.distance, joystick.radius);
+    asteroidManager.update(joystick.angle, joystick.distance, joystick.radius, delta);
     asteroidManager.draw(ctx);
 
     // Kollisionsprüfung
@@ -245,7 +250,7 @@ function animate() {
     document.getElementById('angle').textContent = Math.round(joystick.angle) + '°';
     document.getElementById('score').textContent = score;
 
-    requestAnimationFrame(animate);
+    animationId = requestAnimationFrame(animate);
 }
 
 animate();
