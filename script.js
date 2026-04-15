@@ -16,7 +16,7 @@ let invulnerableDuration = 3; // Sekunden
 let lastTimestamp = 0;
 let animationId = null;
 let lasers = []; // Aktive Laserstrahlen
-
+let joystickTouchId = null; // ID des Fingers, der den Joystick steuert
 
 // ============ RESPONSIVE DIMENSIONEN ============
 function getJoystickDimensions() {
@@ -70,12 +70,14 @@ window.addEventListener('resize', resizeCanvas);
 // ============ TOUCH-EVENT HANDLER ============
 function handleTouchStart(e) {
     e.preventDefault();
-    const touch = e.touches[0];
     const rect = canvas.getBoundingClientRect();
+    const touch = e.changedTouches[0];
     const x = touch.clientX - rect.left;
     const y = touch.clientY - rect.top;
 
-    if (joystick.setInitialTouch(x, y)) {
+    if (!joystick.isActive && joystick.isInside(x, y)) {
+        joystickTouchId = touch.identifier;
+        joystick.setInitialTouch(x, y);
         if (gameOver) resetGame();
         updateStatus('Aktiv');
     } else if (!gameOver) {
@@ -85,9 +87,11 @@ function handleTouchStart(e) {
 
 function handleTouchMove(e) {
     e.preventDefault();
-    if (!joystick.isActive) return;
+    if (!joystick.isActive || joystickTouchId === null) return;
 
-    const touch = e.touches[0];
+    const touch = Array.from(e.touches).find(t => t.identifier === joystickTouchId);
+    if (!touch) return;
+
     const rect = canvas.getBoundingClientRect();
     const x = touch.clientX - rect.left;
     const y = touch.clientY - rect.top;
@@ -98,9 +102,15 @@ function handleTouchMove(e) {
 
 function handleTouchEnd(e) {
     e.preventDefault();
-    joystick.endTouch();
-    arrow.setAngle(0);
-    if (!gameOver) updateStatus('Bereit');
+    if (!joystick.isActive || joystickTouchId === null) return;
+
+    const endedJoystickTouch = Array.from(e.changedTouches).some(t => t.identifier === joystickTouchId);
+    if (endedJoystickTouch) {
+        joystick.endTouch();
+        joystickTouchId = null;
+        arrow.setAngle(0);
+        if (!gameOver) updateStatus('Bereit');
+    }
 }
 
 // ============ MAUS-EVENT HANDLER (für Desktop) ============
@@ -133,9 +143,11 @@ function handleMouseMove(e) {
 
 function handleMouseUp() {
     mouseDown = false;
-    joystick.endTouch();
-    arrow.setAngle(0);
-    if (!gameOver) updateStatus('Bereit');
+    if (joystick.isActive) {
+        joystick.endTouch();
+        arrow.setAngle(0);
+        if (!gameOver) updateStatus('Bereit');
+    }
 }
 
 // ============ EVENT LISTENER REGISTRIEREN ============
