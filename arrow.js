@@ -4,8 +4,8 @@ class Arrow {
         this.x = x;
         this.y = y;
         this.angle = 0; // in Grad
-        this.length = 80;
-        this.width = 25;
+        this.length = 40;
+        this.width = 12.5;
     }
 
     setAngle(angle) {

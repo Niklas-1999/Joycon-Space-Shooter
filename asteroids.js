@@ -65,7 +65,7 @@ class AsteroidManager {
             speed: speed,
             direction: direction,
             rotation: Math.random() * Math.PI * 2,
-            rotationSpeed: (Math.random() - 0.5) * 0.1
+            rotationSpeed: (Math.random() - 0.5) * 0.03
         });
     }
 
