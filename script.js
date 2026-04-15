@@ -153,10 +153,19 @@ function handleMouseUp() {
 // ============ TASTATUR HANDLER ============
 function handleKeyDown(e) {
     if (e.code === 'Space') {
-        e.preventDefault();
+        // Only shoot laser, do not affect joystick or arrow state
         if (!gameOver) {
             shootLaser();
         }
+        e.preventDefault();
+        e.stopPropagation();
+    }
+}
+
+function handleKeyUp(e) {
+    if (e.code === 'Space') {
+        e.preventDefault();
+        e.stopPropagation();
     }
 }
 
@@ -168,6 +177,7 @@ canvas.addEventListener('mousedown', handleMouseDown);
 canvas.addEventListener('mousemove', handleMouseMove);
 canvas.addEventListener('mouseup', handleMouseUp);
 document.addEventListener('keydown', handleKeyDown);
+document.addEventListener('keyup', handleKeyUp);
 
 // Restart Button Event Listener
 document.getElementById('restartButton').addEventListener('click', resetGame);
