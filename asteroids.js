@@ -58,6 +58,17 @@ class AsteroidManager {
                 break;
         }
 
+        const sides = 6 + Math.floor(Math.random() * 4);
+        const shape = [];
+        for (let i = 0; i < sides; i++) {
+            const angle = (i / sides) * Math.PI * 2;
+            const radius = size * (0.7 + Math.random() * 0.6);
+            shape.push({
+                x: Math.cos(angle) * radius,
+                y: Math.sin(angle) * radius
+            });
+        }
+
         this.asteroids.push({
             x: x,
             y: y,
@@ -65,7 +76,8 @@ class AsteroidManager {
             speed: speed,
             direction: direction,
             rotation: Math.random() * Math.PI * 2,
-            rotationSpeed: (Math.random() - 0.5) * 0.03
+            rotationSpeed: (Math.random() - 0.5) * 0.5,
+            shape: shape
         });
     }
 
@@ -188,12 +200,10 @@ class AsteroidManager {
             ctx.lineWidth = 2;
 
             ctx.beginPath();
-            const sides = 6 + Math.floor(Math.random() * 4); // 6-9 Seiten
-            for (let i = 0; i < sides; i++) {
-                const angle = (i / sides) * Math.PI * 2;
-                const radius = asteroid.size * (0.7 + Math.random() * 0.6); // Unregelmäßige Form
-                const px = Math.cos(angle) * radius;
-                const py = Math.sin(angle) * radius;
+            const shape = asteroid.shape;
+            for (let i = 0; i < shape.length; i++) {
+                const px = shape[i].x;
+                const py = shape[i].y;
 
                 if (i === 0) {
                     ctx.moveTo(px, py);
