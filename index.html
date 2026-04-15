@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Joystick mit Pfeil</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <canvas id="canvas"></canvas>
+        
+        <!-- Herzen (Lebensanzeige) -->
+        <div class="hearts">
+            <span id="heart1">❤️</span>
+            <span id="heart2">❤️</span>
+            <span id="heart3">❤️</span>
+        </div>
+        
+        <!-- Info Panel -->
+        <div class="info">
+            <div class="info-item">Winkel: <span class="angle-value" id="angle">0°</span></div>
+            <div class="info-item">Score: <span id="score">0</span></div>
+            <div class="info-item">Status: <span id="status">Bereit</span></div>
+        </div>
+        
+        <!-- Game Over Screen -->
+        <div id="gameOverScreen" class="game-over-screen">
+            <div class="game-over-content">
+                <h1>GAME OVER</h1>
+                <p>Final Score: <span id="finalScore">0</span></p>
+                <button id="restartButton" class="restart-button">Neustart</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="stars.js"></script>
+    <script src="asteroids.js"></script>
+    <script src="joystick.js"></script>
+    <script src="arrow.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
