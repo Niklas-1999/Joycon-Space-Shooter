@@ -159,12 +159,4 @@ canvas {
     box-shadow: 0 6px 20px rgba(255, 68, 68, 0.5);
 }
 
-/* Blinken-Effekt für Unverwundbarkeit */
-.arrow-invulnerable {
-    animation: blink 0.2s infinite;
-}
-
-@keyframes blink {
-    0%, 50% { opacity: 1; }
-    51%, 100% { opacity: 0.3; }
-}
+/* Blinken-Effekt für Unverwundbarkeit - REMOVED: now handled in arrow.js */

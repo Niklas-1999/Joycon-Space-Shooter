@@ -18,6 +18,24 @@ let animationId = null;
 let lasers = []; // Aktive Laserstrahlen
 let joystickTouchId = null; // ID des Fingers, der den Joystick steuert
 
+// ============ FLOATY MOVEMENT PHYSICS ============
+let velocityX = 0;
+let velocityY = 0;
+const acceleration = 200; // pixels per second squared - reduced for slower acceleration
+const deceleration = 200; // pixels per second squared - reduced for slower deceleration
+const maxVelocity = 100; // Maximum velocity in pixels per second (25% of original 200)
+
+// ============ AUDIO OBJEKTE ============
+const laserSound = new Audio('Assets/laser.mp3');
+const popSound = new Audio('Assets/pop.mp3');
+const shieldSound = new Audio('Assets/shield.mp3');
+const bgMusic = new Audio('Assets/bgmusic.mp3');
+bgMusic.loop = true;
+
+// ============ BACKGROUND MUSIC VOLUME CONTROL ============
+let bgMusicVolume = 0.3; // Easily editable volume (0.0 to 1.0)
+bgMusic.volume = bgMusicVolume;
+
 // ============ RESPONSIVE DIMENSIONEN ============
 function getJoystickDimensions() {
     const isMobile = window.innerWidth < 768;
@@ -179,8 +197,17 @@ canvas.addEventListener('mouseup', handleMouseUp);
 document.addEventListener('keydown', handleKeyDown);
 document.addEventListener('keyup', handleKeyUp);
 
-// Restart Button Event Listener
-document.getElementById('restartButton').addEventListener('click', resetGame);
+// Start background music on first user interaction
+let musicStarted = false;
+function startMusicOnInteraction() {
+    if (!musicStarted) {
+        musicStarted = true;
+        bgMusic.play().catch(e => console.log('Background music play failed:', e));
+    }
+}
+
+canvas.addEventListener('touchstart', startMusicOnInteraction);
+canvas.addEventListener('mousedown', startMusicOnInteraction);
 
 // ============ LEBENSSYSTEM ============
 function updateHearts() {
@@ -195,6 +222,10 @@ function updateHearts() {
 }
 
 function shootLaser() {
+    // Play laser sound
+    laserSound.currentTime = 0; // Reset sound to beginning
+    laserSound.play().catch(e => console.log('Audio play failed:', e));
+
     const rad = arrow.angle * Math.PI / 180;
     const speed = Math.min(window.innerWidth, window.innerHeight) * 0.9; // pixels per second
 
@@ -223,6 +254,9 @@ function updateLasers(delta) {
         if (asteroidManager.hitLaser(laser.x, laser.y, laser.radius)) {
             lasers.splice(i, 1);
             score += 20;
+            // Play pop sound when asteroid is destroyed
+            popSound.currentTime = 0; // Reset sound to beginning
+            popSound.play().catch(e => console.log('Audio play failed:', e));
         }
     }
 }
@@ -253,6 +287,7 @@ function loseLife() {
     if (lives <= 0) {
         // Game Over
         gameOver = true;
+        bgMusic.pause();
         document.getElementById('finalScore').textContent = score;
         document.getElementById('gameOverScreen').style.display = 'flex';
         updateStatus('GAME OVER!');
@@ -260,8 +295,11 @@ function loseLife() {
         // Unverwundbar machen
         invulnerable = true;
         invulnerableTimer = invulnerableDuration;
-        document.getElementById('canvas').classList.add('arrow-invulnerable'); // Canvas blinkt für Unverwundbarkeit
+        // document.getElementById('canvas').classList.add('arrow-invulnerable'); // Removed: now handled in arrow.draw
         updateStatus('Unverwundbar!');
+        // Play shield sound when shield activates
+        shieldSound.currentTime = 0; // Reset sound to beginning
+        shieldSound.play().catch(e => console.log('Audio play failed:', e));
     }
 }
 
@@ -270,10 +308,56 @@ function updateInvulnerability(delta) {
         invulnerableTimer -= delta;
         if (invulnerableTimer <= 0) {
             invulnerable = false;
-            document.getElementById('canvas').classList.remove('arrow-invulnerable');
+            // document.getElementById('canvas').classList.remove('arrow-invulnerable'); // Removed: now handled in arrow.draw
             updateStatus('Bereit');
         }
     }
+}
+
+function updateMovement(delta) {
+    if (joystick.distance > 0) {
+        // Calculate direction and magnitude from joystick
+        const inputRad = joystick.angle * Math.PI / 180;
+        const speedRatio = joystick.distance / joystick.radius;
+        
+        // Calculate desired direction
+        const desiredVelX = Math.cos(inputRad) * speedRatio;
+        const desiredVelY = Math.sin(inputRad) * speedRatio;
+        
+        // Accelerate towards desired direction smoothly
+        const accelerationFactor = acceleration * delta;
+        velocityX += desiredVelX * accelerationFactor;
+        velocityY += desiredVelY * accelerationFactor;
+        
+        // Cap at max velocity
+        const currentSpeed = Math.sqrt(velocityX * velocityX + velocityY * velocityY);
+        if (currentSpeed > maxVelocity) {
+            const scaleFactor = maxVelocity / currentSpeed;
+            velocityX *= scaleFactor;
+            velocityY *= scaleFactor;
+        }
+    } else {
+        // Decelerate when joystick is released
+        const speed = Math.sqrt(velocityX * velocityX + velocityY * velocityY);
+        if (speed > 0) {
+            const decelRatio = Math.max(0, speed - deceleration * delta) / speed;
+            velocityX *= decelRatio;
+            velocityY *= decelRatio;
+        }
+    }
+}
+
+function getFloatyInput() {
+    // Return the floaty movement velocity as if it were joystick input
+    const speed = Math.sqrt(velocityX * velocityX + velocityY * velocityY);
+    if (speed === 0) return { angle: 0, distance: 0 };
+    
+    let angle = Math.atan2(velocityY, velocityX) * 180 / Math.PI;
+    if (angle < 0) angle += 360;
+    const maxSpeed = Math.min(canvas.width, canvas.height) * 0.9;
+    const distance = Math.min(speed, maxSpeed);
+    
+    return { angle: angle, distance: distance };
 }
 
 // ============ GAME LOGIC ============
@@ -288,6 +372,9 @@ function resetGame() {
     document.getElementById('gameOverScreen').style.display = 'none';
     updateStatus('Neustart!');
     
+    velocityX = 0;
+    velocityY = 0;
+    bgMusic.play().catch(e => console.log('Background music play failed:', e));
     lastTimestamp = 0;
     animate();
 }
@@ -321,11 +408,15 @@ function animate(timestamp = 0) {
     // Unverwundbarkeit aktualisieren
     updateInvulnerability(delta);
 
+    // Floaty movement mit Physik
+    updateMovement(delta);
+    const floatyInput = getFloatyInput();
+
     // Game-Objekte aktualisieren und zeichnen
-    starField.update(joystick.angle, joystick.distance, joystick.radius, delta);
+    starField.update(floatyInput.angle, floatyInput.distance, joystick.radius, delta);
     starField.draw(ctx);
 
-    asteroidManager.update(joystick.angle, joystick.distance, joystick.radius, delta);
+    asteroidManager.update(floatyInput.angle, floatyInput.distance, joystick.radius, delta);
     asteroidManager.draw(ctx);
 
     // Laser aktualisieren und zeichnen
@@ -337,7 +428,8 @@ function animate(timestamp = 0) {
 
     // UI-Elemente zeichnen
     joystick.draw(ctx);
-    arrow.draw(ctx);
+    arrow.invulnerable = invulnerable;
+    arrow.draw(ctx, timestamp);
 
     // Info aktualisieren
     document.getElementById('angle').textContent = Math.round(joystick.angle) + '°';
